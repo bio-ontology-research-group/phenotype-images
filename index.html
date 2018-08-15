@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html>
+<meta charset="utf-8">
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<body>
+
+<div id="mySidenav" class="sidenav">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+</div>
+<script>
+    function openNav() { document.getElementById("mySidenav").style.width = "250px"; }
+    function closeNav() { document.getElementById("mySidenav").style.width = "0"; }
+</script>
+<style>
+    p {
+        font-weight: bold;
+        font-size: large;
+    }
+    .dot {
+        stroke: #000;
+    }
+    .sidenav {
+        height: 100%;
+        width: 0;
+        position: fixed;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        background-color: #111;
+        overflow-x: hidden;
+        transition: 0.5s;
+        padding-top: 60px;
+    }
+    .sidenav a {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 25px;
+        color: #818181;
+        display: block;
+        transition: 0.3s;
+    }
+    .sidenav a:hover {
+        color: #f1f1f1;
+    }
+    .sidenav .closebtn {
+        position: absolute;
+        top: 0;
+        right: 25px;
+        font-size: 36px;
+        margin-left: 50px;
+    }
+
+</style>
+
+<div id="bio2vecgraph"></div>
+<script>
+    function Graph(file){
+        d3.csv(file, function(error,data) {
+            $('#bio2vecgraph').empty();
+
+            var margin = {
+                    top: 50,
+                    right: 200,
+                    bottom: 50,
+                    left: 50
+                },
+
+                legendWidth = 1200,
+                outerWidth = 900,
+                outerHeight = 450,
+                width = outerWidth - margin.left - margin.right,
+                height = outerHeight - margin.top - margin.bottom;
+
+            var padding = 0;
+            var currentTransform = null;
+            var legendData = [];
+
+            //scale
+            var x = d3.scaleLinear()
+                .domain(d3.extent(data, function(d) {
+                    return parseFloat(d.pca_x);
+                }))
+                .range([padding, width - padding])
+                .nice();
+
+            var y = d3.scaleLinear()
+                .domain(d3.extent(data, function(d) {
+                    return parseFloat(d.pca_y);
+                }))
+                .range([height, 0])
+                .nice();
+
+            var zoom = d3.zoom()
+                .scaleExtent([0, 500])
+                .translateExtent([
+                    [-width * 2, -height * 2],
+                    [width * 2, height * 2]
+                ])
+                .on("zoom", zoomed);
+
+            //var color = d3.scaleOrdinal(d3.schemeCategory10)
+              //  .domain(["gene", "disease", "phenotype", "target","mesh", "gene_function", "chemical"]);
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            var tip = d3.tip()
+                .attr("class", "d3-tip")
+                .offset([-10, 0])
+                .html(function(d) {
+                    return d.name;
+                });
+
+            //chart
+            var chart = d3.select('#bio2vecgraph')
+                .append('svg:svg')
+                .attr('width', legendWidth)
+                .attr('height', outerHeight)
+                .attr("fill", "gray")
+                .attr('class', 'chart')
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + " )")
+                .call(zoom);
+
+            chart.call(tip);
+            chart.append("rect")
+                .attr("width", width)
+                .attr("height", height);
+
+            var xAxis = d3.axisBottom(x).tickSize(-height);
+            var x_axis = chart.append('g')
+                .attr('transform', 'translate(0,' + height + ')')
+                .attr('class', 'x axis')
+                .call(xAxis);
+
+            var yAxis = d3.axisLeft(y).tickSize(-width);
+            var y_axis = chart.append('g')
+                .attr('transform', 'translate(0,0)')
+                .attr('class', 'y axis')
+                .call(yAxis);
+
+            var objects = chart.append("svg")
+                .classed("objects", true)
+                .attr("width", width)
+                .attr("height", height);
+
+            var dots = objects.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", function(d) {
+                    return x(d.pca_x);
+                })
+                .attr("cy", function(d) {
+                    return y(d.pca_y);
+                })
+                .attr("name", function(d) {
+                    return d.name;
+                })
+                .attr("fill", function(d) {
+                    return color(d.name);
+                })
+                .attr("r", 3)
+                .on("mouseover", tip.show)
+                .on("mouseout", tip.hide);
+
+            //add legand
+
+           /* var legendSpace = 20;
+
+            legendData.forEach(function(d, i) {
+                chart.append("circle")
+                    .attr("r", 3)
+                    .attr("cx", width + (margin.bottom / 2) + 5)
+                    .attr("cy", (legendSpace / 2) + i * legendSpace)
+                    .attr("fill", function() {
+                        return d.color;
+                    });
+
+                chart.append("text")
+                    .attr("x", width + (margin.bottom / 2) + 13) // space legend
+                    .attr("y", ((legendSpace / 2) + i * legendSpace)+5)
+                    .attr("class", "legend") // style the legend
+                    .style("fill", function() {
+                        return "#3d3d3d";
+                    })
+                    .text((d.entity.replace('http://bio2vec.net/ontology/', '')).substring(0, 50));
+
+            });*/
+
+            function zoomed() {
+                x_axis.call(xAxis.scale(d3.event.transform.rescaleX(x)));
+                y_axis.call(yAxis.scale(d3.event.transform.rescaleY(y)));
+
+                // re-draw circles using new x-axis & y-axis
+                var new_y = d3.event.transform.rescaleY(y);
+                dots.attr("cy", function(d) {
+                    return new_y(parseFloat(d.pca_y));
+                });
+                var new_x = d3.event.transform.rescaleX(x);
+                dots.attr("cx", function(d) {
+                    return new_x(parseFloat(d.pca_x));
+                });
+
+                function transform(d) {
+                    return "translate(" + d3.event.transform.rescaleX(x) + "," + d3.event.transform.rescaleY(y) + ")";
+                }
+            }
+
+            var points = d3.selectAll('circle');
+            points.on('click', function() {
+                //console.log(this);
+                var name = this.getAttribute("name");
+               // console.log(name)
+
+                $.ajax({
+                    url: "http://localhost:19000/metadata/" + name,
+                    dataType: "json",
+                    success: function(data) {
+                        url = data.image_url;
+
+                        json = JSON.stringify(data);
+                        var nav = document.getElementById("mySidenav");
+                        nav.innerHTML += "<a href=\"#\" onclick='window.open(url)'>Image</a>" +
+                            "<a href=\"#\">Mutation Type: " + data.mutation_type + "</a>" +
+                            "<a href=\"#\">Imaging Method: " + data.imaging_method_label + "</a>" +
+                            "<a href=\"#\" onclick='window.open(\"about:blank\", \"\", \"_blank\").document.write(json)'>JSON</a>";
+                        openNav();
+                    },
+                    error: function(xhr, status, error) {
+                        console.log("error");
+                    }
+                });
+            });
+
+
+        });
+    }
+</script>
+
+<h3><button onclick="Search()">Search</button>      Filter:</h3>
+
+<script>
+    function Filer() {
+        $.ajax({
+            url: "http://localhost:19000/load/",
+            dataType: "json",
+            success: function(data) {
+
+                for(var i in data){
+                    //console.log(data[i]);
+                    // add the text field
+                    var para = document.createElement("P");
+                    var t = document.createTextNode(i + ':');
+                    para.appendChild(t);
+                    document.body.appendChild(para);
+
+                    // add the checkboxes
+                    for(var p in data[i]){
+                        document.body.innerHTML += '<label>';
+
+                        var checkbox = document.createElement("INPUT");
+                        checkbox.setAttribute("type", "checkbox");
+                        checkbox.setAttribute("id",i);
+                        checkbox.setAttribute("checked","true");
+
+                        document.body.innerHTML += data[i][p];
+                        checkbox.value = data[i][p];
+                        document.body.appendChild(checkbox);
+
+                        document.body.innerHTML += '</label>';
+                    }
+                }
+                Graph("L1000.csv")
+            },
+            error: function(xhr, status, error) {
+                console.log("error");
+            }
+        });
+
+    }
+
+    window.onload = Filer;
+
+    function Search() {
+        var n = $( "input:checked" );
+        var json = {};
+        json.imaging_method_label = [];
+        json.mutation_type = [];
+        json.phenotype_default_ontologies = [];
+        json.sex = [];
+        json.taxon = [];
+        for(var b=0; b < n.length; b++){
+            json[n[b].getAttribute("id")].push(n[b].getAttribute("value"));
+        }
+
+        $.ajax({
+            url: "http://localhost:19000/search/",
+            method: "POST",
+            data: {"json" : JSON.stringify(json)},
+            complete: function(data) {
+                console.log(data);
+                Graph("temp.csv");
+            },
+            error: function(xhr, status, error) {
+                console.log(error);
+            }
+        });
+    }
+
+</script>
+
+</body>
+</html>
