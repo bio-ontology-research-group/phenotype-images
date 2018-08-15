@@ -10,6 +10,7 @@
 
 <div id="mySidenav" class="sidenav">
     <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <div id="info"></div>
 </div>
 <script>
     function openNav() { document.getElementById("mySidenav").style.width = "250px"; }
@@ -77,7 +78,7 @@
 
             var padding = 0;
             var currentTransform = null;
-            var legendData = [];
+            var legendData = ["MALE", "FEMALE", "UNKNOWN"];
 
             //scale
             var x = d3.scaleLinear()
@@ -160,23 +161,22 @@
                     return d.name;
                 })
                 .attr("fill", function(d) {
-                    return color(d.name);
+                    return color(d.coloring);
                 })
                 .attr("r", 3)
                 .on("mouseover", tip.show)
                 .on("mouseout", tip.hide);
 
+
             //add legand
-
-           /* var legendSpace = 20;
-
+            var legendSpace = 20;
             legendData.forEach(function(d, i) {
                 chart.append("circle")
                     .attr("r", 3)
                     .attr("cx", width + (margin.bottom / 2) + 5)
                     .attr("cy", (legendSpace / 2) + i * legendSpace)
                     .attr("fill", function() {
-                        return d.color;
+                        return color(d);
                     });
 
                 chart.append("text")
@@ -186,9 +186,8 @@
                     .style("fill", function() {
                         return "#3d3d3d";
                     })
-                    .text((d.entity.replace('http://bio2vec.net/ontology/', '')).substring(0, 50));
-
-            });*/
+                    .text(function() { return d;});
+            });
 
             function zoomed() {
                 x_axis.call(xAxis.scale(d3.event.transform.rescaleX(x)));
@@ -222,8 +221,8 @@
                         url = data.image_url;
 
                         json = JSON.stringify(data);
-                        var nav = document.getElementById("mySidenav");
-                        nav.innerHTML += "<a href=\"#\" onclick='window.open(url)'>Image</a>" +
+                        var nav = document.getElementById("info");
+                        nav.innerHTML = "<a href=\"#\" onclick='window.open(url)'>Image</a>" +
                             "<a href=\"#\">Mutation Type: " + data.mutation_type + "</a>" +
                             "<a href=\"#\">Imaging Method: " + data.imaging_method_label + "</a>" +
                             "<a href=\"#\" onclick='window.open(\"about:blank\", \"\", \"_blank\").document.write(json)'>JSON</a>";
@@ -273,7 +272,7 @@
                         document.body.innerHTML += '</label>';
                     }
                 }
-                Graph("L1000.csv")
+                Graph("L20000.csv")
             },
             error: function(xhr, status, error) {
                 console.log("error");

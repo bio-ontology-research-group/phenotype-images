@@ -37,14 +37,13 @@ def firstFilter(filepath):
 
 def Search(filepath, csvf, terms):
     terms = json.loads(terms)
-    start = ['name', 'pca_x', 'pca_y']
+    start = ['name', 'pca_x', 'pca_y', 'coloring']
 
     with open('/home/sara/PhpstormProjects/d3map/temp.csv', 'wb') as f:
         writer = csv.writer(f)
         writer.writerow(start)
         with open(filepath) as json_file:
             data = json.load(json_file)
-
             with open(csvf, 'r') as csvfile:
                 csvfile = csvfile.readlines()[1:]
                 for line in csvfile:
@@ -53,12 +52,17 @@ def Search(filepath, csvf, terms):
                         num = split[0].split('.')[0]
                         # get image json info
                         check = data['response']['docs'][int(num)]
+                        sex = "UNKNOWN"
+                        if 'sex' in check:
+                            sex = check['sex']
+
+
                         # image bool value
                         image = False
 
                         val = search(terms, check)
                         if val:
-                            writer.writerow([split[0], split[1], split[2]])
+                            writer.writerow([split[0], split[1], split[2], sex])
 
 
 def search(terms, check):
